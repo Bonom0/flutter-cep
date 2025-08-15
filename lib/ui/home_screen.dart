@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_cep/ui/widgets/addres_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,11 +69,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 counterText: '',
               ),
             ),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.search_rounded),
-              label: Text('Buscar CE'),
+            AnimatedSwitcher(
+              duration: Duration.zero,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.search_rounded),
+                label: Text('Buscar CEP'),
+              ),
             ),
+            AddresWidget(),
           ],
         ),
       ),
