@@ -3,6 +3,7 @@ import 'package:flutter_cep/models/cep_model.dart';
 import 'package:flutter_cep/repositories/cep_repository.dart';
 import 'package:flutter_cep/ui/widgets/addres_widget.dart';
 import 'package:http/http.dart' as http;
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,13 +15,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final repository = CepRepository(client: http.Client());
   final cepController = TextEditingController();
+  final cepFormatter = MaskTextInputFormatter(
+    mask: '#####-###',
+    filter: {'#': RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
   String? errorMessage;
   CepModel? cepModel;
+  bool isLoading = false;
 
   Future<void> buscarCep() async {
+    FocusScope.of(context).unfocus();
     setState(() {
       errorMessage = null;
       cepModel = null;
+      isLoading = true;
     });
     final cep = cepController.text.trim();
 
@@ -28,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
       //dar mensagem de erro
       setState(() {
         errorMessage = 'Digite um CEP válido!';
+        isLoading = false;
       });
     }
 
@@ -36,10 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         errorMessage = null;
         cepModel = addressModel;
+        isLoading = false;
       });
     } on Exception catch (e) {
       setState(() {
         errorMessage = 'Erro ao buscar endereço';
+        isLoading = false;
       });
     }
   }
@@ -104,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: cepController,
               keyboardType: TextInputType.number,
               maxLength: 9,
+              inputFormatters: [cepFormatter],
               decoration: InputDecoration(
                 prefixIcon: Icon(Icons.location_on_rounded),
                 labelText: 'CEP',
@@ -112,12 +125,43 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             AnimatedSwitcher(
-              duration: Duration.zero,
-              child: ElevatedButton.icon(
-                onPressed: buscarCep,
-                icon: const Icon(Icons.search_rounded),
-                label: Text('Buscar CEP'),
-              ),
+              duration: Duration(milliseconds: 500),
+              child: isLoading
+                  ? Container(
+                      width: 200,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          spacing: 12,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            Text(
+                              'Buscando Dados...',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: buscarCep,
+                      icon: const Icon(Icons.search_rounded),
+                      label: Text('Buscar CEP'),
+                    ),
             ),
 
             Visibility(
@@ -154,8 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Visibility(
               visible: cepModel != null,
-              child: AddresWidget(
-                cepModel: cepModel,
+              child: AnimatedOpacity(
+                opacity: cepModel != null ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 1000),
+                child: AddresWidget(
+                  cepModel: cepModel,
+                ),
               ),
             ),
           ],
